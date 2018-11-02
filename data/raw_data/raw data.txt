@@ -1,0 +1,2 @@
+The original data can be found at https://www.kaggle.com/snap/amazon-fine-food-reviews.
+In this file, we only kept the "Rating", "Summary" and "Review" columns.
