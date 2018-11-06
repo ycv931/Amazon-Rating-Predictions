@@ -1,6 +1,7 @@
 import pandas as pd 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+import pickle
 
 # Defines a class for structured review data.
 # The template for data will have the structure of our dataset.
@@ -49,57 +50,119 @@ class ReviewDataset():
                    write = False):
         self.data["Summary"] = self.data["Summary"].fillna("")
         self.data["Text"] = self.data["Text"].fillna("")
-        if write:
-            try:
-                self.data.to_csv(clean_data_path)
-            except:
-                raise ValueError("clean_data_path has a non admissible input.")
     
     # Split divides the dataset into training and test sample. If write is
     # active, it writes the training and test data sets to the paths specified
     # in the training_data_path and test_data_path arguments
     
-    def split(self, test_size: float, 
-              training_data_path = None, 
-              test_data_path = None,
-              write = False):
+    def split(self, test_size: float):
         train, test = train_test_split(self.data, test_size = test_size)
-        self.train_set = train
-        self.test_set = test
-        if write:
-            try:
-                train.to_csv(training_data_path)
-                test.to_csv(test_data_path)
-            except:
-                raise ValueError("A data path argument has a non admissible input.")
+        summaries_all = self.data["Summary"].values
+        scores_all = self.data["Score"].values
+        summaries_train, summaries_test, scores_train, scores_test = train_test_split(summaries_all, scores_all, test_size = test_size)
+        
+        self.train = train
+        self.test = test
+        
+        self.summaries_train = summaries_train
+        self.summaries_test = summaries_test
+        self.scores_train = scores_train
+        self.scores_test = scores_test             
+        
         return None
     
    # Generate representation assigns to the relevant attributes of the class 
    # a vector representation of the text. The nature of this representation is
    #based on the representation flag.
     
-    def generate_representation(self, representation: str):
+    def generate_representation(self, representation: str, ):
         if representation in supported_representations:
-            train_summary_values = self.train_set["Summary"].values
-            test_summary_values = self.test_set["Summary"].values
+            train_summary_values = self.summaries_train
+            test_summary_values = self.summaries_test
             
             if representation == "count":
                 count_vectorizer = CountVectorizer(input = "content")
                 self.count_features = count_vectorizer.fit_transform(train_summary_values)
                 self.count_test_features = count_vectorizer.transform(test_summary_values)
-                
+                        
             if representation == "set":
                 set_vectorizer = CountVectorizer(input = "content", binary = True)
                 self.set_features = set_vectorizer.fit_transform(train_summary_values)
                 self.set_test_features = set_vectorizer.transform(test_summary_values)                  
-    
+                        
             if representation == "tfidf":
                 tfidf_vectorizer = TfidfVectorizer(input = "content")
                 self.tfidf_features = tfidf_vectorizer.fit_transform(train_summary_values)
-                self.tfidf_test_features = tfidf_vectorizer.transform(test_summary_values) 
+                self.tfidf_test_features = tfidf_vectorizer.transform(test_summary_values)  
+                        
             return None
-        else:
-            raise ValueError("The representation is not supported.")
+
+    # Save_data saves a csv with self.data to the given data path.
+
+    def save_data(self, data_path: str):
+            try:
+                self.data.to_csv(data_path)
+            except:
+                raise ValueError("clean_data_path has a non admissible input.")        
+
+    # save_train_test saves the train-test split to two separate csv files with
+    # paths specified by training_data_path and test_data_path
+
+    def save_train_test(self, 
+                        training_data_path: str, 
+                        test_data_path : str):
+        try:
+            self.train.to_csv(training_data_path)
+            self.test.to_csv(test_data_path)
+        except:
+            raise ValueError("A data path argument has a non admissible input.")
+
+    # pickle_train_test_scores saves two pickles with the training scores and 
+    # the test scores in the specified data paths.
+    
+    def pickle_train_test_scores(self,
+                                 train_scores_path: str,
+                                 test_scores_path: str):
+        try:
+            with open(train_scores_path, 'wb') as handle:
+                pickle.dump(self.scores_train, handle, protocol=pickle.HIGHEST_PROTOCOL)    
+        except:
+            raise ValueError("Pickle for train scores could not be written to the given path")
+        try:
+            with open(test_scores_path, 'wb') as handle:
+                pickle.dump(self.scores_test, handle, protocol=pickle.HIGHEST_PROTOCOL)    
+        except:
+            raise ValueError("Pickle for test scores could not be written to the given path")
+    
+    # pickle_representation saves a pickle with the test and training 
+    # representation of the text given as input to the two specified data paths
+        
+    def pickle_representation(self, representation : str, 
+                               pickle_path_train: str,
+                               pickle_path_test: str):
+        if representation in supported_representations:
+            try:
+                if representation == "count":              
+                    with open(pickle_path_train, 'wb') as handle:
+                        pickle.dump(self.count_features, handle, protocol=pickle.HIGHEST_PROTOCOL)                    
+                    with open(pickle_path_test, 'wb') as handle:
+                        pickle.dump(self.count_test_features, handle, protocol=pickle.HIGHEST_PROTOCOL)               
+ 
+                if representation == "set":
+                    with open(pickle_path_train, 'wb') as handle:
+                        pickle.dump(self.set_features, handle, protocol=pickle.HIGHEST_PROTOCOL)                    
+                    with open(pickle_path_test, 'wb') as handle:
+                        pickle.dump(self.set_test_features, handle, protocol=pickle.HIGHEST_PROTOCOL) 
+                        
+                if representation == "tfidf":                        
+                    with open(pickle_path_train, 'wb') as handle:
+                        pickle.dump(self.tfidf_features, handle, protocol=pickle.HIGHEST_PROTOCOL)                    
+                    with open(pickle_path_test, 'wb') as handle:
+                        pickle.dump(self.tfidf_test_features, handle, protocol=pickle.HIGHEST_PROTOCOL)                                  
+            except:
+                raise ValueError("Could not write to the specified pickle_path.")                    
+            
+        
 
 
 
