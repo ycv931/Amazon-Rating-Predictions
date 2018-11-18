@@ -50,10 +50,9 @@ class NaiveBayesClassifier():
         return self.cond_prob
                 
     def fit(self, x: spa.csr_matrix):
-        """returns a list with the probabilities of x having a certain 
-        (index number + 1)rating. Applies logs to avoid underflow and
-        to take into account that the probability of appearance of a word
-        increases if the same word has already appeared before."""
+        """returns a numpy.array with the predicted ratings. Applies logs to 
+        avoid underflow and to take into account that the probability of 
+        appearance of a word increases if the same word has already appeared before."""
        
         if self.is_trained == False:
             return ("""The Classifier has not been trained. Please use 
@@ -67,11 +66,11 @@ class NaiveBayesClassifier():
                 for i in range(5):
                     for j in range(0,len(row_indices[0])):
                         predictions[i] += self.fractions[i] * (
-                                    ((self.cond_prob[i][row_indices[0][j],
-                                    row_indices[1][j]]))** np.log(1 + row_indices[2][j]))
-                smoothed_predictions = [np.log(predictions[i]) if (predictions[i]!=0) 
+                        ((self.cond_prob[i][row_indices[0][j],
+                        row_indices[1][j]])) ** np.log(1 + row_indices[2][j]))
+                smoothed_predictions = [np.log(predictions[i]) if (predictions[i] != 0) 
                                     else float("-inf") for i in range(5)]
                 final_predict = np.append(final_predict, 
-                          smoothed_predictions.index(max(smoothed_predictions)) + 1)
+                smoothed_predictions.index(max(smoothed_predictions)) + 1)
                 
         return final_predict             
